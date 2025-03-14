@@ -1,7 +1,7 @@
 const express = require('express')
 const app = express()
 var morgan = require('morgan')
-const cors = require('cors')
+// const cors = require('cors')
 app.use(express.static('dist'))
 let notes = [
     { 
@@ -26,7 +26,7 @@ let notes = [
     }
 ]
 
-app.use(cors());
+// app.use(cors());
 
 morgan.token('body', (req) => JSON.stringify(req.body))  // Custom token to log request body and jsonify it
 

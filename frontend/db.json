@@ -1,0 +1,24 @@
+{
+  "persons": [
+    {
+      "id": "d144",
+      "name": "Romeo",
+      "number": "2141244132"
+    },
+    {
+      "id": "1102",
+      "name": "Sindbad",
+      "number": "12412312412"
+    },
+    {
+      "id": "4ac8",
+      "name": "Bonke",
+      "number": "787847832"
+    },
+    {
+      "id": "2090",
+      "name": "Manko",
+      "number": "674862321"
+    }
+  ]
+}
