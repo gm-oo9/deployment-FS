@@ -53,16 +53,24 @@ const App = () => {
   
     const trimmedName = newName.trim(); // Remove leading & trailing spaces
     const trimmedNumber = newNumber.trim(); 
+    // console.log(trimmedName, trimmedNumber)
   
     if (!trimmedName) {
       alert("Name cannot be empty!");
       return;
     }
+    if (trimmedName.length < 3) {
+      alert("Name should be at least 3 characters long!");
+      return;
+      
+    }
     axios.get(baseUrl).then(response => {
       const latestPersons = response.data;
+      // console.log(latestPersons)
 
       // Check if the name already exists
       const existingPerson = latestPersons.find(person => person.name.trim().toLowerCase() === trimmedName.toLowerCase());
+      // console.log(existingPerson)
 
       if (existingPerson) {
         const confirmationReplace = window.confirm(
@@ -75,6 +83,7 @@ const App = () => {
             number: trimmedNumber
           })
           .then(response => {
+            console.log(`These are latestPersons: ${latestPersons}`);
             setPersons(latestPersons.map(person =>
               person.id === response.data.id ? response.data : person
             ));
@@ -86,11 +95,12 @@ const App = () => {
             setNewNumber('');
           })
           .catch(error => {
-            console.log("Error updating person:", error);
-            setRedNotificationMessage(`Error updating ${trimmedName}'s number`);
-            setTimeout(() => {
-              setRedNotificationMessage(null);
-            }, 5000);
+            if (error.response && error.response.data.error) {
+              setRedNotificationMessage(error.response.data.error);
+              setTimeout(() => {
+                setRedNotificationMessage(null);
+              }, 5000);
+            }
           });
         }
         return;
@@ -107,11 +117,14 @@ const App = () => {
           setGreenNotificationMessage(null);
         }, 5000);
       })
-      .catch(error => {console.error("Error adding person:", error)
-        setRedNotificationMessage(`Error adding ${trimmedName}`);
+      .catch(error => {
+        console.error("Error adding person:", error.response.data.error);
+        setRedNotificationMessage(error.response.data.error);
         setTimeout(() => {
-          setRedNotificationMessage(null);}, 5000);
+          setRedNotificationMessage(null);
+        }, 5000);
       });
+      
     });
   };
  

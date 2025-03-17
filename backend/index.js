@@ -1,32 +1,12 @@
-const express = require('express')
-const app = express()
-var morgan = require('morgan')
-// const cors = require('cors')
-app.use(express.static('dist'))
-let notes = [
-    { 
-      "id": "1",
-      "name": "Arto Hellas", 
-      "number": "040-123456"
-    },
-    { 
-      "id": "2",
-      "name": "Ada Lovelace", 
-      "number": "39-44-5323523"
-    },
-    { 
-      "id": "3",
-      "name": "Dan Abramov", 
-      "number": "12-43-234345"
-    },
-    { 
-      "id": "4",
-      "name": "Mary Poppendieck", 
-      "number": "39-23-6423122"
-    }
-]
+const Person = require('./models/person');
+console.log(Person)
+const express = require('express');
+const app = express();
 
-// app.use(cors());
+var morgan = require('morgan');
+
+app.use(express.static('dist'));
+
 
 morgan.token('body', (req) => JSON.stringify(req.body))  // Custom token to log request body and jsonify it
 
@@ -39,56 +19,98 @@ app.get('/', (req, res) => {
     res.send('<h1>Hello World!</h1>')
 })
 
-app.get('/api/persons', (req,res) => {
-    res.json(notes)
+app.get('/api/persons', async(req,res, next) => {
+    try{
+        const persons = await Person.find({})
+        res.json(persons)
+    } catch (error) {
+        // console.log(error)
+        // res.status(400).send({error: 'malformatted id'})
+        next(error);
+    }
 })
 
-app.get('/info', (req, res) => {
+app.get('/api/info', async(req, res, next) => {
     const date = new Date()
+    const Count = await Person.countDocuments()
     res.send(`
-    <p>Phonebook has info for ${notes.length} people</p>
+    <p>Phonebook has info for ${Count} people</p>
     <p>${date}</p>`)
-})
+});
 
-app.get('/api/persons/:id', (req, res) => {
+app.get('/api/persons/:id', async(req, res, next) => {
     const id = req.params.id
-    const note = notes.find(note => note.id === id)
-    if (note) {
-        res.json(note)
-    }else {
-        res.status(404).end()
+    const person = await Person.findById(id)
+    try {
+        if (person){
+            res.json(person)
+        }else{
+            res.status(404).end()
+        }
 
+    }catch (error) {
+        // console.log(error)
+        // res.status(400).send({error: 'malformatted id'})
+        next(error);
     }
 
 })
 
-app.delete('/api/persons/:id', (req, res) => {
-    const id = req.params.id
-    notes = notes.filter(note => note.id !== id)
-    res.status(204).end()
+
+app.delete('/api/persons/:id', async(req, res, next) => {
+    
+    try{
+        const id = req.params.id
+        await Person.findByIdAndDelete(id)
+        res.status(204).end()
+    } catch (error) {
+        // console.log(error)
+        // res.status(400).send({error: 'malformatted id'})
+        next(error);
+    }
+
+
+    
 
 })
-const generateId = () => {
-    return(Math.random(1,10000).toString())
-}
+
 app.use(express.json())
 
-const validatePerson = (req,res,next) => {
-    const body = req.body
-    if (!body.name || !body.number) {
-        return res.status(400).json({error: 'name or number missing'})
-        }
-    if (notes.find(note => note.name === body.name)) {
-        return res.status(400).json({error: 'name must be unique'})
+app.post('/api/persons', async(req, res, next) => {
+    try{
+        const newPerson = await new Person(req.body).save()
+        res.json(newPerson)
+    } catch (error) {
+        next(error);
     }
-    next()
-}
-app.post('/api/persons',validatePerson, (req, res) => {
-    const body = req.body
-    body.id = generateId()
-    notes = notes.concat(body)
-    res.json(body)
 })
+app.put('/api/persons/:id', async(req, res, next) => {
+    const id = req.params.id
+    const body = req.body
+    const person = {
+        name: body.name,
+        number: body.number
+    }
+    try{
+        const updatedPerson = await Person.findByIdAndUpdate(id, person, {new: true})
+        res.json(updatedPerson)
+    } catch (error) {
+        next(error);
+    }
+});
+
+app.use((error, req, res, next) => {
+    console.error(error.message)
+    if (error.name === 'CastError') {
+        return res.status(400).send({error: 'malformatted id'})
+    }
+    else if (error.name === 'ValidationError') {
+        return res.status(400).send({error: error.message})
+    }
+    else {
+        res.status(400).json({error: error.message}||{error: 'Something went wrong'})
+    }
+});
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => {
